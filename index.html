@@ -1,15 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Verse Wars - A strategic card game inspired by Firefly universe lore" />
-    <meta name="theme-color" content="#06b6d4" />
-    <title>⚔️ VERSE WARS</title>
+    <title>Verse Wars</title>
+    <meta name="description" content="Verse Wars: a strategic, rules-shifting card game across the Hyperrail." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div class="crt-overlay" aria-hidden="true"></div>
+    <div id="app"></div>
+
+    <script src="js/cards.js"></script>
+    <script src="js/codex.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/train.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/main.js"></script>
   </body>
 </html>
