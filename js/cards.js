@@ -247,6 +247,10 @@ window.VW = window.VW || {};
     card({ id: 'rule-reserves', type: CARD_TYPES.RULE, name: 'Deep Reserves', effect: 'DRAW_COUNT', value: 3, description: 'Draw 3 cards per turn.' }),
     card({ id: 'rule-luck', type: CARD_TYPES.RULE, name: "Runner's Luck", effect: 'DRAW_COUNT', value: 2, description: 'Draw 2 cards per turn.' }),
     card({ id: 'rule-overdrive', type: CARD_TYPES.RULE, name: 'Overdrive', effect: 'DRAW_COUNT', value: 4, description: 'Draw 4 cards per turn.' }),
+    card({ id: 'rule-purge', type: CARD_TYPES.RULE, name: 'Purge Protocol', effect: 'HAND_LIMIT', value: 0, description: 'Hand limit is 0 cards.', flavor: 'The Combine likes an empty manifest. Fewer questions that way.' }),
+    card({ id: 'rule-frenzy', type: CARD_TYPES.RULE, name: 'Boarding Frenzy', effect: 'PLAY_LIMIT', value: 5, description: 'Play 5 cards per turn.', flavor: 'Everybody’s manifest empties out fast, one way or another.' }),
+    card({ id: 'rule-flood', type: CARD_TYPES.RULE, name: 'Signal Flood', effect: 'DRAW_COUNT', value: 6, description: 'Draw 6 cards per turn.', flavor: 'Every relay on the line talking at once.' }),
+    card({ id: 'rule-dark', type: CARD_TYPES.RULE, name: 'Running Dark', effect: 'DRAW_COUNT', value: 0, description: 'Draw 0 cards per turn.', flavor: 'No signal out, no signal in. Just you and whatever’s already on board.' }),
   ];
 
   const ACTION_CARDS = [
@@ -259,6 +263,8 @@ window.VW = window.VW || {};
     card({ id: 'action-reroute', type: CARD_TYPES.ACTION, name: 'Reroute', effect: 'DISCARD_GOAL', description: 'Discard the active Goal.' }),
     card({ id: 'action-doubledown', type: CARD_TYPES.ACTION, name: 'Double Down', effect: 'DRAW_TWO', description: 'Draw 2 cards immediately.' }),
     card({ id: 'action-signaljam', type: CARD_TYPES.ACTION, name: 'Signal Jam', effect: 'DISCARD_RIVAL_HAND', description: "Rival discards a random card from hand." }),
+    card({ id: 'action-duplicate', type: CARD_TYPES.ACTION, name: 'Twin Rails', effect: 'DUPLICATE_KEEPER', description: 'Duplicate your strongest Keeper.', flavor: 'One good idea deserves a second car.' }),
+    card({ id: 'action-cleanslate', type: CARD_TYPES.ACTION, name: 'Clean Slate', effect: 'RESET_RULES', description: 'Discard every active Rule.', flavor: 'Sometimes the fastest fix is starting over.' }),
   ];
 
   const GOAL_CARDS = [
@@ -269,6 +275,11 @@ window.VW = window.VW || {};
     card({ id: 'goal-ghostwire', type: CARD_TYPES.GOAL, name: 'Ghost in the Wire', checkId: 'ghost_wire', description: 'Control 1 Artifact + 2 Locations to win.' }),
     card({ id: 'goal-salvage', type: CARD_TYPES.GOAL, name: 'Salvage Run', checkId: 'salvage_run', description: 'Control 2 Vessels + 1 Artifact to win.' }),
     card({ id: 'goal-fullhouse', type: CARD_TYPES.GOAL, name: 'Full House', checkId: 'full_house', description: 'Control 1 Crew + 1 Vessel + 1 Location + 1 Artifact to win.' }),
+    card({ id: 'goal-skeleton', type: CARD_TYPES.GOAL, name: 'Skeleton Crew', checkId: 'skeleton_crew', description: 'Control 3 Crew to win.' }),
+    card({ id: 'goal-vault', type: CARD_TYPES.GOAL, name: 'Vault Keeper', checkId: 'vault_keeper', description: 'Control 2 Artifacts to win.' }),
+    card({ id: 'goal-homestead', type: CARD_TYPES.GOAL, name: 'Homestead', checkId: 'homestead', description: 'Control 1 Location + 2 Crew to win.' }),
+    card({ id: 'goal-convoy', type: CARD_TYPES.GOAL, name: 'Convoy', checkId: 'convoy', description: 'Control 2 Vessels + 1 Location to win.' }),
+    card({ id: 'goal-relicrun', type: CARD_TYPES.GOAL, name: 'Relic Run', checkId: 'relic_run', description: 'Control 2 Artifacts + 1 Vessel to win.' }),
   ];
 
   function countByType(keepers, type) {
@@ -287,6 +298,11 @@ window.VW = window.VW || {};
       countByType(k, CARD_TYPES.VESSEL) >= 1 &&
       countByType(k, CARD_TYPES.LOCATION) >= 1 &&
       countByType(k, CARD_TYPES.ARTIFACT) >= 1,
+    skeleton_crew: (k) => countByType(k, CARD_TYPES.CREW) >= 3,
+    vault_keeper: (k) => countByType(k, CARD_TYPES.ARTIFACT) >= 2,
+    homestead: (k) => countByType(k, CARD_TYPES.LOCATION) >= 1 && countByType(k, CARD_TYPES.CREW) >= 2,
+    convoy: (k) => countByType(k, CARD_TYPES.VESSEL) >= 2 && countByType(k, CARD_TYPES.LOCATION) >= 1,
+    relic_run: (k) => countByType(k, CARD_TYPES.ARTIFACT) >= 2 && countByType(k, CARD_TYPES.VESSEL) >= 1,
   };
 
   // The same per-type thresholds GOAL_CHECKS tests, but as data instead of
@@ -300,6 +316,11 @@ window.VW = window.VW || {};
     ghost_wire: { [CARD_TYPES.ARTIFACT]: 1, [CARD_TYPES.LOCATION]: 2 },
     salvage_run: { [CARD_TYPES.VESSEL]: 2, [CARD_TYPES.ARTIFACT]: 1 },
     full_house: { [CARD_TYPES.CREW]: 1, [CARD_TYPES.VESSEL]: 1, [CARD_TYPES.LOCATION]: 1, [CARD_TYPES.ARTIFACT]: 1 },
+    skeleton_crew: { [CARD_TYPES.CREW]: 3 },
+    vault_keeper: { [CARD_TYPES.ARTIFACT]: 2 },
+    homestead: { [CARD_TYPES.LOCATION]: 1, [CARD_TYPES.CREW]: 2 },
+    convoy: { [CARD_TYPES.VESSEL]: 2, [CARD_TYPES.LOCATION]: 1 },
+    relic_run: { [CARD_TYPES.ARTIFACT]: 2, [CARD_TYPES.VESSEL]: 1 },
   };
 
   // Shown on the run-complete overlay: a short, random "coming home" beat,

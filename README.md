@@ -119,11 +119,15 @@ There's no bundler and no `import`/`export`. Every file attaches what it needs t
 
 ## Roadmap ideas
 
-- Smarter AI (currently a straightforward heuristic, not deeply strategic)
 - Card art beyond the train sprite and the Codex comic
-- More Rule/Action/Goal variety beyond the current 45-card pool
 - A wider map: more than one junction pair per depth, or paths that don't reconverge
 - Online multiplayer (would need a small backend or a service like Firebase/PartyKit)
+
+Already done: the AI scores every playable card against the current board (ability
+strength, Goal proximity, best available steal target) instead of picking by a fixed
+type order, and the Rule/Action/Goal pool has grown to 56 cards, including two new
+Action effects (duplicate a Keeper, reset every active Rule) and five new Goal
+combinations.
 
 ## A note
 

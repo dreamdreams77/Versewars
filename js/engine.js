@@ -218,6 +218,14 @@ window.VW = window.VW || {};
         }
         case 'DISCARD_RIVAL_HAND':
           return ctx.rivalHand.length > 0 ? 1.8 : 0;
+        case 'DUPLICATE_KEEPER': {
+          const best = bestKeeper(myKeepers);
+          return best ? 1 + keeperScore(best) : 0;
+        }
+        case 'RESET_RULES': {
+          const activeCount = Object.keys(ctx.activeRules).filter((k) => ctx.activeRules[k]).length;
+          return activeCount > 0 ? 0.9 : 0;
+        }
         default:
           return 1;
       }
@@ -384,6 +392,26 @@ window.VW = window.VW || {};
           state.discard.push(discarded);
           state.log.unshift(label(otherKey) + ' loses ' + discarded.name + ' to a jammed signal.');
         }
+        break;
+      }
+      case 'DUPLICATE_KEEPER': {
+        const best = bestKeeper(me.keepers);
+        if (best) {
+          const clone = Object.assign({}, best, { id: best.id + '-copy-' + Math.random().toString(36).slice(2, 8) });
+          me.keepers.push(clone);
+          state.log.unshift(label(playerKey) + ' duplicates ' + best.name + '.');
+        }
+        break;
+      }
+      case 'RESET_RULES': {
+        const hadAny = ['HAND_LIMIT', 'PLAY_LIMIT', 'DRAW_COUNT'].some((slot) => state.activeRules[slot]);
+        ['HAND_LIMIT', 'PLAY_LIMIT', 'DRAW_COUNT'].forEach((slot) => {
+          if (state.activeRules[slot]) {
+            state.discard.push(state.activeRules[slot]);
+            state.activeRules[slot] = null;
+          }
+        });
+        if (hadAny) state.log.unshift(label(playerKey) + ' resets every active Rule to default.');
         break;
       }
       default:
