@@ -289,6 +289,19 @@ window.VW = window.VW || {};
       countByType(k, CARD_TYPES.ARTIFACT) >= 1,
   };
 
+  // The same per-type thresholds GOAL_CHECKS tests, but as data instead of
+  // closures, so the AI can score *progress* toward a Goal (how many of the
+  // required Keepers a side already has) rather than only a pass/fail check.
+  const GOAL_REQUIREMENTS = {
+    full_crew: { [CARD_TYPES.CREW]: 2, [CARD_TYPES.VESSEL]: 1 },
+    frontier_king: { [CARD_TYPES.LOCATION]: 2 },
+    collector: { [CARD_TYPES.ARTIFACT]: 1, [CARD_TYPES.CREW]: 1, [CARD_TYPES.VESSEL]: 1 },
+    long_run: { [CARD_TYPES.VESSEL]: 3 },
+    ghost_wire: { [CARD_TYPES.ARTIFACT]: 1, [CARD_TYPES.LOCATION]: 2 },
+    salvage_run: { [CARD_TYPES.VESSEL]: 2, [CARD_TYPES.ARTIFACT]: 1 },
+    full_house: { [CARD_TYPES.CREW]: 1, [CARD_TYPES.VESSEL]: 1, [CARD_TYPES.LOCATION]: 1, [CARD_TYPES.ARTIFACT]: 1 },
+  };
+
   // Shown on the run-complete overlay: a short, random "coming home" beat,
   // followed in the UI by a separate, quieter note. Only ever surfaces when
   // the whole run (all stages) is won, not per-stage.
@@ -388,6 +401,7 @@ window.VW = window.VW || {};
   VW.ACTION_CARDS = ACTION_CARDS;
   VW.GOAL_CARDS = GOAL_CARDS;
   VW.GOAL_CHECKS = GOAL_CHECKS;
+  VW.GOAL_REQUIREMENTS = GOAL_REQUIREMENTS;
   VW.HOMECOMING_LINES = HOMECOMING_LINES;
   VW.SECRET_HOMECOMING_LINE = SECRET_HOMECOMING_LINE;
   VW.ACHIEVEMENTS = ACHIEVEMENTS;

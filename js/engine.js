@@ -20,7 +20,9 @@ window.VW = window.VW || {};
   const CARD_TYPES = window.VW.CARD_TYPES;
   const KEEPER_TYPES = window.VW.KEEPER_TYPES;
   const GOAL_CHECKS = window.VW.GOAL_CHECKS;
+  const GOAL_REQUIREMENTS = window.VW.GOAL_REQUIREMENTS;
   const ABILITY = window.VW.ABILITY;
+  const countByType = window.VW.countByType;
   const RULE_CARDS = window.VW.RULE_CARDS;
   const ACTION_CARDS = window.VW.ACTION_CARDS;
   const GOAL_CARDS = window.VW.GOAL_CARDS;
@@ -75,6 +77,153 @@ window.VW = window.VW || {};
 
   function stealableKeepers(keepers) {
     return keepers.filter((k) => !(k.ability && k.ability.type === ABILITY.STEAL_IMMUNE));
+  }
+
+  // --- AI heuristics -----------------------------------------------------
+  // How much a passive/triggered ability is worth to whoever holds it, used
+  // both to rank which Keeper the AI should play and which rival Keeper is
+  // worth targeting with Boarding Party / Swap Rails, rather than picking
+  // either uniformly at random.
+  const ABILITY_WEIGHT = {
+    HAND_LIMIT_BONUS: 2.5,
+    DRAW_BONUS: 3,
+    PLAY_BONUS: 3.5,
+    SCRIP_ON_WIN: 1,
+    SHIELD_KEEPER: 1.5,
+    ON_PLAY_DRAW: 2.2,
+    HP_SHIELD: 1.2,
+    STEAL_IMMUNE: 1.3,
+    RIVAL_HAND_DEBUFF: 2,
+    HEAL_ON_WIN: 1.2,
+  };
+
+  function keeperScore(c) {
+    if (!c.ability) return 1;
+    const w = ABILITY_WEIGHT[c.ability.type] || 1;
+    return 1 + w * (c.ability.value || 1);
+  }
+
+  function bestKeeper(pool) {
+    if (pool.length === 0) return null;
+    let best = [pool[0]];
+    let bestScore = keeperScore(pool[0]);
+    for (let i = 1; i < pool.length; i++) {
+      const s = keeperScore(pool[i]);
+      if (s > bestScore) {
+        best = [pool[i]];
+        bestScore = s;
+      } else if (s === bestScore) {
+        best.push(pool[i]);
+      }
+    }
+    return best[Math.floor(Math.random() * best.length)];
+  }
+
+  function worstKeeper(pool) {
+    if (pool.length === 0) return null;
+    let worst = pool[0];
+    let worstScore = keeperScore(pool[0]);
+    for (let i = 1; i < pool.length; i++) {
+      const s = keeperScore(pool[i]);
+      if (s < worstScore) {
+        worst = pool[i];
+        worstScore = s;
+      }
+    }
+    return worst;
+  }
+
+  // Fraction (0..1) of a Goal's per-type Keeper requirements a side already
+  // satisfies, e.g. 0.5 for a Goal needing 2 Crew when a side controls 1.
+  // Lets the AI weigh a Goal by how close either side already is to it,
+  // instead of only knowing pass/fail.
+  function goalProgress(keepers, checkId) {
+    const req = GOAL_REQUIREMENTS[checkId];
+    if (!req) return 0;
+    const types = Object.keys(req);
+    if (types.length === 0) return 0;
+    const total = types.reduce((sum, t) => sum + Math.min(countByType(keepers, t), req[t]) / req[t], 0);
+    return total / types.length;
+  }
+
+  // Scores one playable hand card for the AI: how good a pick is it right
+  // now, given the rest of its hand, its own tableau, the rival's tableau,
+  // the active Goal, and the active Rules. Keeper cards favor strong
+  // abilities and pieces the active Goal still needs; Action cards favor
+  // whichever effect does the most damage or gain in the current board
+  // state; Rule cards favor higher draw/play limits.
+  function scoreAiCard(c, ctx) {
+    const myKeepers = ctx.myKeepers;
+    const rivalKeepers = ctx.rivalKeepers;
+    const activeGoal = ctx.activeGoal;
+
+    if (KEEPER_TYPES.includes(c.type)) {
+      let score = keeperScore(c);
+      if (activeGoal) {
+        const req = GOAL_REQUIREMENTS[activeGoal.checkId];
+        if (req && req[c.type] && countByType(myKeepers, c.type) < req[c.type]) score += 3;
+      }
+      return score;
+    }
+
+    if (c.type === 'rule') {
+      if (c.effect === 'HAND_LIMIT') return c.value == null ? 4 : 1 + c.value * 0.6;
+      if (c.effect === 'PLAY_LIMIT') return 1 + c.value * 1.2;
+      if (c.effect === 'DRAW_COUNT') return 1 + c.value * 1.0;
+      return 1;
+    }
+
+    if (c.type === 'goal') {
+      const mine = goalProgress(myKeepers, c.checkId);
+      const rival = goalProgress(rivalKeepers, c.checkId);
+      return 1.5 + (mine - rival) * 5;
+    }
+
+    if (c.type === 'action') {
+      switch (c.effect) {
+        case 'STEAL_KEEPER': {
+          const best = bestKeeper(stealableKeepers(rivalKeepers));
+          return best ? 2 + keeperScore(best) : 0;
+        }
+        case 'TRADE_KEEPER': {
+          const best = bestKeeper(stealableKeepers(rivalKeepers));
+          const worst = worstKeeper(myKeepers);
+          if (!best || !worst) return 0;
+          return 1.5 + Math.max(0, keeperScore(best) - keeperScore(worst));
+        }
+        case 'ALL_DISCARD_KEEPER': {
+          if (rivalKeepers.length === 0) return 0.2;
+          const rivalAvg = rivalKeepers.reduce((s, k) => s + keeperScore(k), 0) / rivalKeepers.length;
+          const myAvg = myKeepers.length ? myKeepers.reduce((s, k) => s + keeperScore(k), 0) / myKeepers.length : 0;
+          return Math.max(0.2, 1 + (rivalAvg - myAvg));
+        }
+        case 'REDRAW_HAND': {
+          const rest = ctx.hand.filter((h) => h.id !== c.id);
+          const goodCount = rest.filter((h) => KEEPER_TYPES.includes(h.type) || h.type === 'action').length;
+          return Math.max(0.3, 2.5 - goodCount);
+        }
+        case 'EXTRA_TURN':
+          return 2.3;
+        case 'DRAW_TWO':
+          return 2.1;
+        case 'DISCARD_RULE': {
+          const activeCount = Object.keys(ctx.activeRules).filter((k) => ctx.activeRules[k]).length;
+          return activeCount > 0 ? 0.8 : 0;
+        }
+        case 'DISCARD_GOAL': {
+          if (!activeGoal) return 0;
+          const mine = goalProgress(myKeepers, activeGoal.checkId);
+          const rival = goalProgress(rivalKeepers, activeGoal.checkId);
+          return rival > mine ? 1 + (rival - mine) * 4 : 0.2;
+        }
+        case 'DISCARD_RIVAL_HAND':
+          return ctx.rivalHand.length > 0 ? 1.8 : 0;
+        default:
+          return 1;
+      }
+    }
+
+    return 1;
   }
 
   function getDrawCount(state, playerKey) {
@@ -155,7 +304,7 @@ window.VW = window.VW || {};
       case 'STEAL_KEEPER': {
         const pool = stealableKeepers(other.keepers);
         if (pool.length > 0) {
-          const chosen = pool[Math.floor(Math.random() * pool.length)];
+          const chosen = bestKeeper(pool);
           const idx = other.keepers.findIndex((k) => k.id === chosen.id);
           const stolen = other.keepers.splice(idx, 1)[0];
           me.keepers.push(stolen);
@@ -195,7 +344,7 @@ window.VW = window.VW || {};
       case 'TRADE_KEEPER': {
         const pool = stealableKeepers(other.keepers);
         if (me.keepers.length > 0 && pool.length > 0) {
-          const chosen = pool[Math.floor(Math.random() * pool.length)];
+          const chosen = bestKeeper(pool);
           const oi = other.keepers.findIndex((k) => k.id === chosen.id);
           const mi = Math.floor(Math.random() * me.keepers.length);
           const tmp = me.keepers[mi];
@@ -392,18 +541,28 @@ window.VW = window.VW || {};
     checkStageOutcome(state);
   }
 
-  function chooseAiCard(hand, myKeepers) {
+  // Picks the AI's next play: an immediate win takes priority over
+  // anything else, otherwise every playable card is scored by scoreAiCard
+  // and the best (ties broken at random) wins, rather than just favoring
+  // whichever card type comes first.
+  function chooseAiCard(hand, myKeepers, rivalKeepers, rivalHand, activeGoal, activeRules) {
+    if (hand.length === 0) return null;
     const winningGoal = hand.find((c) => c.type === 'goal' && GOAL_CHECKS[c.checkId] && GOAL_CHECKS[c.checkId](myKeepers));
     if (winningGoal) return winningGoal;
-    const keeper = hand.find((c) => KEEPER_TYPES.includes(c.type));
-    if (keeper) return keeper;
-    const action = hand.find((c) => c.type === 'action');
-    if (action) return action;
-    const rule = hand.find((c) => c.type === 'rule');
-    if (rule) return rule;
-    const anyGoal = hand.find((c) => c.type === 'goal');
-    if (anyGoal) return anyGoal;
-    return hand[0] || null;
+
+    const ctx = { hand: hand, myKeepers: myKeepers, rivalKeepers: rivalKeepers, rivalHand: rivalHand, activeGoal: activeGoal, activeRules: activeRules };
+    let best = [hand[0]];
+    let bestScore = scoreAiCard(hand[0], ctx);
+    for (let i = 1; i < hand.length; i++) {
+      const s = scoreAiCard(hand[i], ctx);
+      if (s > bestScore) {
+        best = [hand[i]];
+        bestScore = s;
+      } else if (s === bestScore) {
+        best.push(hand[i]);
+      }
+    }
+    return best[Math.floor(Math.random() * best.length)];
   }
 
   function dealStage(meta, run) {
@@ -551,7 +710,7 @@ window.VW = window.VW || {};
         let guard = 0;
         while (next.playsLeft > 0 && next.players.ai.hand.length > 0 && guard < 25) {
           guard += 1;
-          const chosen = chooseAiCard(next.players.ai.hand, next.players.ai.keepers);
+          const chosen = chooseAiCard(next.players.ai.hand, next.players.ai.keepers, next.players.you.keepers, next.players.you.hand, next.activeGoal, next.activeRules);
           if (!chosen) break;
           next.playsLeft -= 1;
           applyCard(next, 'ai', chosen.id);
