@@ -1,185 +1,76 @@
 # Contributing to Verse Wars
 
-Thank you for your interest in contributing! This document provides guidelines for participating in this project.
+Thanks for your interest in contributing! This is a small, dependency-free project:
+plain HTML, CSS, and JavaScript, no build step, no `npm install`.
 
-## Code of Conduct
+## Getting started
 
-Be respectful, inclusive, and constructive. We're all here to make a great game.
-
-## Getting Started
-
-1. **Fork the repository**
+1. Fork and clone the repository.
+2. Open `index.html` directly in a browser, or serve the folder with anything
+   static (`npx serve .`, `python3 -m http.server`) if you'd rather not rely on
+   `file://`.
+3. Create a branch for your change:
    ```bash
-   git clone https://github.com/yourusername/verse-wars.git
-   cd verse-wars
+   git checkout -b feature/my-change
    ```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+There's nothing to install and nothing to build. Edit a file, save, and reload
+the browser tab.
 
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
+## Project structure
 
-4. **Create a branch**
-   ```bash
-   git checkout -b feature/my-amazing-feature
-   ```
-
-## Development Workflow
-
-### Making Changes
-
-1. Make your changes in a feature branch
-2. Test thoroughly in the browser
-3. Commit with clear, descriptive messages:
-   ```bash
-   git commit -m "feat: Add new card type XYZ"
-   ```
-
-### Commit Message Format
-
-Use conventional commits:
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation
-- `style:` Code style (formatting, etc)
-- `refactor:` Code refactoring
-- `perf:` Performance improvement
-- `test:` Tests
-- `chore:` Build, dependencies, etc
-
-Example:
-```bash
-git commit -m "feat: Add three new crew cards for expansion"
+```
+index.html            entry point: loads the CSS and each script in order
+css/style.css          retro dispatch-terminal styling: scanlines, brass/steel palette
+js/
+  cards.js               card definitions, Crew abilities, and roguelite progression data
+  codex.js                  Story, Rules, and Comic content for the menu's Codex
+  storage.js                  localStorage wrapper for Scrip + unlocks (safe in-memory fallback)
+  engine.js                     game state, stage/run flow, AI opponent
+  train.js                        the canvas pixel-art train + its animation wrapper
+  sound.js                          synthesized sound effects (no audio files)
+  main.js                             renders the DOM from state and wires up clicks
 ```
 
-### Pull Request Process
+Every file attaches what it needs to a shared `VW` global (`window.VW`); there's
+no `import`/`export` and no bundler.
 
-1. Push to your fork
-2. Create Pull Request with:
-   - Clear title describing change
-   - Description of what changed and why
-   - Screenshots for UI changes
-   - Reference to any related issues
+## Making changes
 
-3. Wait for review and respond to feedback
-4. Once approved, your PR will be merged
+- **Cards & progression**: edit `js/cards.js`. Follow the existing card shape
+  (`id`, `name`, `type`, `description`/`flavor`, optional `ability`). Add new
+  Crew/Vessel/Location/Artifact IDs to `UNLOCKABLE` in the same file if they
+  should be gated behind Scrip in the Hangar.
+- **Rules/Actions/Goals**: also in `js/cards.js`, alongside the Keeper decks.
+- **Game logic**: `js/engine.js` is a plain reducer, `engine.reduce(state, action)`.
+  No React, no classes — just functions over a plain state object.
+- **Rendering**: `js/main.js` rebuilds `innerHTML` from state on every
+  dispatch and uses one delegated click listener for the whole app. New
+  interactive elements should get a `data-action` (or `data-card-id` /
+  `data-target-id`) attribute rather than their own listener.
+- **Styling**: `css/style.css` holds everything, organized by screen/component
+  with a section comment above each. Keep new UI within the existing
+  brass/steel palette (CSS custom properties at the top of the file).
 
-## Areas for Contribution
+## Testing checklist
 
-### Cards & Content
-- New crew, vessels, locations, events, artifacts
-- Balance adjustments to existing cards
-- Story references and lore improvements
+Before submitting a PR:
 
-### Gameplay & Features
-- New game modes
-- Difficulty adjustments
-- New mechanics or abilities
-- UI/UX improvements
+- [ ] No console errors
+- [ ] A full run plays start to finish (win and lose at least one stage)
+- [ ] New cards/abilities behave as described and interact sensibly with
+      existing Rules
+- [ ] Hangar unlocks and Scrip totals persist correctly (check `localStorage`,
+      or play twice in the same session)
+- [ ] UI looks right on both desktop and a narrow/mobile viewport
+- [ ] Achievements still trigger where expected
 
-### Code Quality
-- Performance optimizations
-- Bug fixes
-- Refactoring
-- Testing
+## Commit messages
 
-### Documentation
-- README improvements
-- Code comments
-- Developer guides
-- API documentation
+Conventional commits are appreciated but not required:
+`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `perf:`, `chore:`.
 
-## Adding New Cards
+## Pull requests
 
-1. Edit `src/utils/cardDatabase.js`
-2. Add card to appropriate array (crew, vessels, etc.)
-3. Include all required fields:
-   - `id`: unique identifier (lowercase, underscores)
-   - `name`: display name
-   - `image`: emoji
-   - `faction`: browncoat, alliance, independent, or threat
-   - `ability`/`effect`: what it does
-   - `rarity`: common to mythic
-   - `storyRef`: Firefly reference
-   - `description`: flavor text
-
-4. Test in game:
-   ```bash
-   npm run dev
-   ```
-
-5. Commit and create PR
-
-## Adding New Missions
-
-1. Edit `src/utils/missionDatabase.js`
-2. Add mission object with:
-   - `id`: unique identifier
-   - `name`: mission name
-   - `objective`: what players must do
-   - `requiredCards`: what cards are needed
-   - `difficulty`: 1-4
-   - `lore`: story context
-
-3. Update victory logic in `VerseWars.jsx`
-4. Test objective checking
-5. Submit PR
-
-## Adding New Character Classes
-
-1. Update `andyCharacters` in `VerseWars.jsx`
-2. Add:
-   - Class name and image
-   - Unique ability and description
-   - Passive bonus
-   - Color scheme
-   - Inside jokes (3-5)
-
-3. Update AI logic to handle new class
-4. Test against AI opponents
-5. Submit PR
-
-## Testing Checklist
-
-Before submitting PR, ensure:
-
-- [ ] No console errors or warnings
-- [ ] Game starts and plays normally
-- [ ] Cards work as described
-- [ ] AI makes reasonable plays
-- [ ] Victory conditions trigger correctly
-- [ ] UI looks good on desktop
-- [ ] UI looks good on mobile (if UI change)
-- [ ] Stats save/load correctly
-- [ ] No memory leaks on long sessions
-
-## Code Style
-
-We follow standard React/JavaScript practices:
-
-- Use functional components and hooks
-- Clear variable names
-- Comments for complex logic
-- Consistent indentation (2 spaces)
-- No unused imports
-
-## Questions?
-
-- Open an issue with your question
-- Check existing issues/PRs for similar questions
-- Join our community discussions
-
-## Reward System
-
-Contributions are rewarded with:
-- Visible credit in README
-- Contributor badge on GitHub
-- Recognition in release notes
-- Early access to new features
-
-**Thank you for making Verse Wars better!**
+Push to your fork and open a PR with a clear description of what changed and
+why, plus a screenshot for any UI change. Reference related issues if any exist.
