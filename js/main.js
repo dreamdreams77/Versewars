@@ -101,6 +101,12 @@ window.VW = window.VW || {};
     if (state.meta && state.meta.totalScrip < prevScrip) {
       sound.unlock();
     }
+    const turnJustBeganForYou =
+      (action.type === 'AI_FULL_TURN' || action.type === 'START_RUN' || action.type === 'CONTINUE_STAGE' || action.type === 'RETRY_STAGE') &&
+      state.phase === 'playing' && state.turn === 'you' && !state.winner;
+    if (turnJustBeganForYou) {
+      sound.drawCard();
+    }
     scheduleAiTurnIfNeeded();
   }
 

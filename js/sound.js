@@ -66,10 +66,6 @@ window.VW = window.VW || {};
       tone(659.25, 0.16, { delay: 0.13, gain: 0.11 });
       tone(783.99, 0.26, { delay: 0.26, gain: 0.12 });
     },
-    lose() {
-      tone(392, 0.22, { type: 'sine', delay: 0, gain: 0.09 });
-      tone(311, 0.32, { type: 'sine', delay: 0.16, gain: 0.09 });
-    },
     hpLost() {
       tone(220, 0.16, { type: 'sawtooth', delay: 0, gain: 0.07 });
     },
