@@ -337,7 +337,7 @@ window.VW = window.VW || {};
   // Shown instead of a random HOMECOMING_LINE when the run is completed
   // with Bub, DJ Cool, and Sakura Junction all in the tableau at once.
   const SECRET_HOMECOMING_LINE =
-    "Every seat's full for this one \u2014 Bub's got the save-point joke loaded again, DJ Cool's aux cord is not up for debate, and Sakura Junction still owes you that gin and tonic. Whatever's past the Last Junction can wait one more night. The whole crew made it home.";
+    "Every seat's full for this one. Bub's got the save-point joke loaded again, DJ Cool's aux cord is not up for debate, and Sakura Junction still owes you that gin and tonic. Whatever's past the Last Junction can wait one more night. The whole crew made it home.";
 
   const ACHIEVEMENTS = [
     { id: 'first-run', name: 'First Run', description: 'Complete a full run, start to finish.' },
@@ -382,29 +382,39 @@ window.VW = window.VW || {};
   const BASE_SCRIP_PER_STAGE = 5;
   const STARTING_HP = 4;
 
-  // Eight stages, each themed on a stop along the line. Only stage 0 starts
+  // Ten stages, each themed on a stop along the line. Only stage 0 starts
   // the player with a truly empty tableau (every later stage inherits
   // whatever was carried forward from the last win), so it gets a small
   // playerHeadStart to compensate, otherwise it plays far harder than the
   // stages after it, rather than easier.
   //
   // The map branches instead of running in a straight line: Dustfall is
-  // always first and the Last Junction is always last, but the six stops
-  // between them are arranged as three paired choices. Each pair shares a
+  // always first and the Last Junction is always last, and the eight stops
+  // between them are arranged as paired choices. Each pair shares a
   // difficulty tier (headstart/drawBonus), and the "harder" side of each
   // pair asks for one more card in the rival's hand in exchange for bonus
-  // Scrip. Both sides of a pair lead to the same next pair, so the map
-  // stays a fixed 5 stages deep no matter which path is taken, while still
-  // giving 8 distinct routes through a run (2 x 2 x 2).
+  // Scrip.
+  //
+  // The first choice genuinely forks the route rather than just reskinning
+  // it: Glass Concourse leads to the Sakura Junction / Rustbelt Span pair,
+  // while Nine Rivers Yard leads to a different pair entirely, the
+  // Cinderline / Cold Harbor Yard, so which stop you clear first changes
+  // what you'll see next. Both of those second-tier pairs reconverge on the
+  // same Hollowpoint Crossing / Static Fringe pair before the Last
+  // Junction, keeping the map a fixed 5 stages deep no matter which path is
+  // taken, while still giving 8 distinct routes through a run (2 x 2 x 2)
+  // across 10 unique named stops instead of 8.
   const STAGE_MAP = {
     start: 'dustfall',
     totalDepth: 5,
     nodes: {
       dustfall: { id: 'dustfall', name: 'Dustfall Station', rivalHand: 2, rivalDrawBonus: 0, rivalHeadStart: 0, playerHeadStart: 1, harder: false, scripBonus: 0, next: ['glass', 'ninerivers'], isFinal: false },
       glass: { id: 'glass', name: 'The Glass Concourse', rivalHand: 4, rivalDrawBonus: 0, rivalHeadStart: 1, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['sakura', 'rustbelt'], isFinal: false },
-      ninerivers: { id: 'ninerivers', name: 'Nine Rivers Yard', rivalHand: 3, rivalDrawBonus: 0, rivalHeadStart: 1, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['sakura', 'rustbelt'], isFinal: false },
+      ninerivers: { id: 'ninerivers', name: 'Nine Rivers Yard', rivalHand: 3, rivalDrawBonus: 0, rivalHeadStart: 1, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['cinderline', 'coldharbor'], isFinal: false },
       sakura: { id: 'sakura', name: 'Sakura Junction', rivalHand: 5, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['hollowpoint', 'staticfringe'], isFinal: false },
       rustbelt: { id: 'rustbelt', name: 'The Rustbelt Span', rivalHand: 4, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['hollowpoint', 'staticfringe'], isFinal: false },
+      cinderline: { id: 'cinderline', name: 'The Cinderline', rivalHand: 5, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['hollowpoint', 'staticfringe'], isFinal: false },
+      coldharbor: { id: 'coldharbor', name: 'Cold Harbor Yard', rivalHand: 4, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['hollowpoint', 'staticfringe'], isFinal: false },
       hollowpoint: { id: 'hollowpoint', name: 'Hollowpoint Crossing', rivalHand: 6, rivalDrawBonus: 1, rivalHeadStart: 3, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['lastjunction'], isFinal: false },
       staticfringe: { id: 'staticfringe', name: 'The Static Fringe', rivalHand: 5, rivalDrawBonus: 1, rivalHeadStart: 3, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['lastjunction'], isFinal: false },
       lastjunction: { id: 'lastjunction', name: 'The Last Junction', rivalHand: 6, rivalDrawBonus: 1, rivalHeadStart: 4, playerHeadStart: 0, harder: false, scripBonus: 0, next: [], isFinal: true },
