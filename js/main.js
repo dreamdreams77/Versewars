@@ -56,7 +56,7 @@ window.VW = window.VW || {};
     const el = document.createElement('div');
     el.className = 'achievement-toast';
     el.innerHTML =
-      '<span class="achievement-toast__mark">&#9733;</span>' +
+      '<span class="achievement-toast__mark star-pip star-pip--full" aria-hidden="true"></span>' +
       '<div class="achievement-toast__text"><strong>Achievement unlocked</strong><span>' + escapeHtml(def.name) + '</span></div>';
     layer.appendChild(el);
     requestAnimationFrame(() => el.classList.add('achievement-toast--in'));
@@ -126,7 +126,7 @@ window.VW = window.VW || {};
   function hpPips(hp, maxHp) {
     let out = '';
     for (let i = 0; i < maxHp; i++) {
-      out += i < hp ? '&#9829;' : '&#9825;';
+      out += '<span class="hp-pip ' + (i < hp ? 'hp-pip--full' : 'hp-pip--empty') + '" aria-hidden="true"></span>';
     }
     return out;
   }
@@ -166,7 +166,7 @@ window.VW = window.VW || {};
 
   function typeLabelHtml(card) {
     const meta = TYPE_META[card.type];
-    return '<span class="card__type" style="color:' + meta.accent + '">[ <span class="card__icon card__icon--' + card.type + '"></span>' + meta.label + ' ]</span>';
+    return '<span class="card__type"><span class="card__icon card__icon--' + card.type + '"></span>' + meta.label + '</span>';
   }
 
   function cardHtml(card, opts) {
@@ -184,10 +184,12 @@ window.VW = window.VW || {};
     const flavor = card.flavor ? '<span class="card__flavor">' + escapeHtml(card.flavor) + '</span>' : '';
     return (
       '<' + tag + ' class="card' + sizeClass + (interactive ? ' card--clickable' : '') + (disabled ? ' card--disabled' : '') + (isTarget ? ' card--targetable' : '') + '"' +
-      ' style="border-left-color:' + meta.accent + '" ' + attrs + '>' +
+      ' style="--card-accent:' + meta.accent + '" ' + attrs + '>' +
       typeLabelHtml(card) +
+      '<span class="card__body">' +
       '<span class="card__name">' + escapeHtml(card.name) + '</span>' +
       desc + flavor + abilityHtml(card) +
+      '</span>' +
       '</' + tag + '>'
     );
   }
@@ -196,13 +198,15 @@ window.VW = window.VW || {};
     const meta = TYPE_META[card.type];
     const flavor = card.flavor ? '<span class="card__flavor">' + escapeHtml(card.flavor) + '</span>' : '';
     return (
-      '<div class="card card--locked" style="border-left-color:' + meta.accent + '">' +
+      '<div class="card card--locked" style="--card-accent:' + meta.accent + '">' +
       typeLabelHtml(card) +
+      '<span class="card__body">' +
       '<span class="card__name">' + escapeHtml(card.name) + '</span>' +
       flavor + abilityHtml(card) +
       '<button type="button" class="btn btn--unlock" data-action="unlock" data-card-id="' + card.id + '"' + (canAfford ? '' : ' disabled') + '>' +
       'Unlock: ' + cost + ' Scrip' +
       '</button>' +
+      '</span>' +
       '</div>'
     );
   }
@@ -269,7 +273,7 @@ window.VW = window.VW || {};
           const got = earned.indexOf(a.id) !== -1;
           return (
             '<div class="achievement' + (got ? ' achievement--earned' : '') + '">' +
-            '<span class="achievement__mark">' + (got ? '&#9733;' : '&#9734;') + '</span>' +
+            '<span class="achievement__mark star-pip ' + (got ? 'star-pip--full' : 'star-pip--empty') + '" aria-hidden="true"></span>' +
             '<div class="achievement__text">' +
             '<strong>' + escapeHtml(a.name) + '</strong>' +
             '<span>' + escapeHtml(a.description) + '</span>' +
@@ -456,7 +460,7 @@ window.VW = window.VW || {};
       '<h1>Verse Wars</h1>' +
       '<div class="board__header-actions">' +
       '<button type="button" class="btn btn--ghost btn--icon" data-action="toggle-sound" aria-label="Toggle sound">' +
-      (sound.isEnabled() ? '&#128266;' : '&#128263;') +
+      '<span class="icon--sound ' + (sound.isEnabled() ? 'icon--sound-on' : 'icon--sound-off') + '" aria-hidden="true"></span>' +
       '</button>' +
       '<div class="codex-dropdown">' +
       '<button type="button" class="btn btn--ghost" data-action="toggle-codex">Codex &#9662;</button>' +
