@@ -295,8 +295,18 @@ window.VW = window.VW || {};
   // never come. Depth-capped in case both players are ever simultaneously
   // out of cards (the whole pool exhausted into hands/tableaus).
   function passIfStuck(state, playerKey, otherKey, depth) {
-    if (depth >= 6) return;
     if (state.playsLeft > 0 && state.players[playerKey].hand.length === 0) {
+      if (depth >= 6) {
+        // Both sides have stayed hand-empty for several passes in a row
+        // (the whole card pool genuinely exhausted into hands/tableaus).
+        // Clear the owed play rather than leaving playsLeft > 0 forever
+        // with nothing left to play, which would otherwise strand
+        // whoever's turn this lands on: nothing in the human's hand to
+        // click, and nothing else ever re-dispatches to hand the turn
+        // back over.
+        state.playsLeft = 0;
+        return;
+      }
       enforceHandLimit(state, playerKey);
       beginTurn(state, otherKey);
       passIfStuck(state, otherKey, playerKey, depth + 1);

@@ -113,6 +113,7 @@ js/
   train.js                       the canvas pixel-art train + its animation wrapper
   sound.js                         synthesized sound effects (no audio files)
   main.js                            renders the DOM from state and wires up clicks
+test/run.js           dependency-free regression suite: `node test/run.js`
 ```
 
 There's no bundler and no `import`/`export`. Every file attaches what it needs to a shared
