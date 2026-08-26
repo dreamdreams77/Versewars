@@ -30,6 +30,7 @@ window.VW = window.VW || {};
   let aiTimer = null;
   let codexOpen = false; // dropdown, menu screen only
   let codexView = null; // null | 'story' | 'rules' | 'comic' | 'achievements': overlay tab, if open
+  let confirmingRestart = false; // "New Run" mid-run asks before discarding the active tableau/HP
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -135,6 +136,19 @@ window.VW = window.VW || {};
       '<div class="run-summary__row"><span>Scrip this run</span><strong>' + scripThisRun + '</strong></div>' +
       '<div class="run-summary__row"><span>MVP</span><strong>' + (mvp ? escapeHtml(mvp.name) : 'none') + '</strong></div>' +
       '</div>'
+    );
+  }
+
+  function restartConfirmHtml() {
+    return (
+      '<div class="overlay"><div class="overlay__card">' +
+      '<h2>Abandon this run?</h2>' +
+      '<p class="overlay__goal">Your current tableau and HP will be lost. Scrip from stages you’ve already cleared this run is already banked and stays with you.</p>' +
+      '<div class="overlay__routes">' +
+      '<button type="button" class="btn btn--danger" data-action="confirm-restart">Abandon &amp; start fresh</button>' +
+      '<button type="button" class="btn btn--ghost" data-action="cancel-restart">Keep playing</button>' +
+      '</div>' +
+      '</div></div>'
     );
   }
 
@@ -493,6 +507,9 @@ window.VW = window.VW || {};
         });
       }
     }
+    if (confirmingRestart) {
+      root.insertAdjacentHTML('beforeend', restartConfirmHtml());
+    }
   }
 
   root.addEventListener('click', (e) => {
@@ -505,9 +522,19 @@ window.VW = window.VW || {};
     const actionEl = e.target.closest('[data-action]');
     if (actionEl) {
       const action = actionEl.getAttribute('data-action');
-      if (action === 'start' || action === 'restart') {
+      if (action === 'start') {
         sound.start();
         dispatch({ type: 'START_RUN' });
+      } else if (action === 'restart') {
+        confirmingRestart = true;
+        render();
+      } else if (action === 'confirm-restart') {
+        confirmingRestart = false;
+        sound.start();
+        dispatch({ type: 'START_RUN' });
+      } else if (action === 'cancel-restart') {
+        confirmingRestart = false;
+        render();
       } else if (action === 'toggle-sound') {
         sound.setEnabled(!sound.isEnabled());
         render();
