@@ -63,7 +63,7 @@ window.VW = window.VW || {};
     {
       title: 'This Run',
       body: [
-        "Dustfall Station. The Glass Concourse. Nine Rivers Yard. Sakura Junction. The Rustbelt Span. Hollowpoint Crossing. The Static Fringe. And if you're still standing, the Last Junction.",
+        "Dustfall Station. The Glass Concourse. Nine Rivers Yard. Sakura Junction. The Rustbelt Span. The Cinderline. Cold Harbor Yard. Hollowpoint Crossing. The Static Fringe. And if you're still standing, the Last Junction.",
         "Every run starts the same way, with a rumor, a job, or just a reason to point the train toward the frontier and go. No two runs take the same line through it. Every junction is a choice, and you won't see every named stop in one trip. After that, the charted line ends, and everything else is up to the crew you've built and the choices you make, one station at a time.",
       ],
     },
@@ -198,9 +198,12 @@ window.VW = window.VW || {};
 
   // A small blocky humanoid sprite, drawn from a row-string bitmap, the
   // same idea as an old JRPG overworld sprite. '#' = fill, '.' = empty.
-  const FIGURE_ROWS = ['..####..', '.######.', '.######.', '.######.', '..####..', '.######.', '.######.', '.######.', '.######.', '.######.', '.######.', '.######.', '.##..##.', '.##..##.', '.##..##.', '.##..##.'];
-  function figure(ctx, gx, gy, color, scale) {
+  const FIGURE_ROWS = ['..####..', '..####..', '.######.', '.######.', '.######.', '.######.', '.######.', '.######.', '.######.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.'];
+  function figure(ctx, gx, gy, color, scale, shadowColor) {
     scale = scale || 1;
+    if (shadowColor) {
+      px(ctx, gx + scale, gy + 16 * scale, 6 * scale, scale, shadowColor);
+    }
     FIGURE_ROWS.forEach((row, ry) => {
       let start = -1;
       for (let i = 0; i <= row.length; i++) {
@@ -289,9 +292,9 @@ window.VW = window.VW || {};
       px(ctx, 0, 50, GRID_W, 8, PAL.groundLine);
       px(ctx, 0, 49, GRID_W, 1, PAL.warmC);
 
-      figure(ctx, 24, 26, PAL.steel, 2);
-      figure(ctx, 40, 22, PAL.brass, 2.2);
-      figure(ctx, 58, 27, PAL.plum, 1.9);
+      figure(ctx, 24, 26, PAL.steel, 2, PAL.groundLine);
+      figure(ctx, 40, 22, PAL.brass, 2.2, PAL.groundLine);
+      figure(ctx, 58, 27, PAL.plum, 1.9, PAL.groundLine);
     },
 
     chase: function (ctx) {
@@ -323,6 +326,8 @@ window.VW = window.VW || {};
       [[10, 9], [80, 14], [16, 46], [76, 48], [5, 28], [84, 32], [34, 4], [58, 52]].forEach((d) => star(ctx, d[0], d[1], PAL.paper));
 
       px(ctx, 43, 27, 4, 4, PAL.paper);
+      px(ctx, 44, 28, 2, 2, PAL.dangerA);
+      px(ctx, 44.5, 28.5, 1, 1, PAL.signalRed);
     },
 
     horizon: function (ctx) {

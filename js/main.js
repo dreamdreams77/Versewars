@@ -30,6 +30,7 @@ window.VW = window.VW || {};
   let aiTimer = null;
   let codexOpen = false; // dropdown, menu screen only
   let codexView = null; // null | 'story' | 'rules' | 'comic' | 'achievements': overlay tab, if open
+  let confirmingRestart = false; // "New Run" mid-run asks before discarding the active tableau/HP
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -37,11 +38,51 @@ window.VW = window.VW || {};
     return div.innerHTML;
   }
 
+  // Achievement toasts live in their own layer appended straight to
+  // <body>, outside #app, so they survive the next full re-render instead
+  // of getting wiped the moment render() rebuilds the root's innerHTML.
+  let toastLayer = null;
+  function getToastLayer() {
+    if (!toastLayer) {
+      toastLayer = document.createElement('div');
+      toastLayer.className = 'achievement-toast-layer';
+      document.body.appendChild(toastLayer);
+    }
+    return toastLayer;
+  }
+
+  function showAchievementToast(def) {
+    const layer = getToastLayer();
+    const el = document.createElement('div');
+    el.className = 'achievement-toast';
+    el.innerHTML =
+      '<span class="achievement-toast__mark star-pip star-pip--full" aria-hidden="true"></span>' +
+      '<div class="achievement-toast__text"><strong>Achievement unlocked</strong><span>' + escapeHtml(def.name) + '</span></div>';
+    layer.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('achievement-toast--in'));
+    setTimeout(() => {
+      el.classList.remove('achievement-toast--in');
+      el.classList.add('achievement-toast--out');
+      setTimeout(() => el.remove(), 400);
+    }, 4200);
+  }
+
   function dispatch(action) {
     const prevOutcome = state.stageOutcome;
     const prevScrip = state.meta ? state.meta.totalScrip : 0;
+    const prevAchIds = (state.meta && state.meta.achievements) || [];
     state = engine.reduce(state, action);
     render();
+
+    const nextAchIds = (state.meta && state.meta.achievements) || [];
+    if (nextAchIds.length > prevAchIds.length) {
+      const newIds = nextAchIds.filter((id) => prevAchIds.indexOf(id) === -1);
+      newIds.forEach((id) => {
+        const def = ACHIEVEMENTS.find((a) => a.id === id);
+        if (def) showAchievementToast(def);
+      });
+      sound.achievement();
+    }
 
     if (state.log && state.log[0] && state.log[0].indexOf('static storm rattles') !== -1) {
       const boardEl = document.querySelector('.board');
@@ -59,6 +100,12 @@ window.VW = window.VW || {};
     }
     if (state.meta && state.meta.totalScrip < prevScrip) {
       sound.unlock();
+    }
+    const turnJustBeganForYou =
+      (action.type === 'AI_FULL_TURN' || action.type === 'START_RUN' || action.type === 'CONTINUE_STAGE' || action.type === 'RETRY_STAGE') &&
+      state.phase === 'playing' && state.turn === 'you' && !state.winner;
+    if (turnJustBeganForYou) {
+      sound.drawCard();
     }
     scheduleAiTurnIfNeeded();
   }
@@ -79,7 +126,7 @@ window.VW = window.VW || {};
   function hpPips(hp, maxHp) {
     let out = '';
     for (let i = 0; i < maxHp; i++) {
-      out += i < hp ? '&#9829;' : '&#9825;';
+      out += '<span class="hp-pip ' + (i < hp ? 'hp-pip--full' : 'hp-pip--empty') + '" aria-hidden="true"></span>';
     }
     return out;
   }
@@ -98,6 +145,19 @@ window.VW = window.VW || {};
     );
   }
 
+  function restartConfirmHtml() {
+    return (
+      '<div class="overlay"><div class="overlay__card">' +
+      '<h2>Abandon this run?</h2>' +
+      '<p class="overlay__goal">Your current tableau and HP will be lost. Scrip from stages you’ve already cleared this run is already banked and stays with you.</p>' +
+      '<div class="overlay__routes">' +
+      '<button type="button" class="btn btn--danger" data-action="confirm-restart">Abandon &amp; start fresh</button>' +
+      '<button type="button" class="btn btn--ghost" data-action="cancel-restart">Keep playing</button>' +
+      '</div>' +
+      '</div></div>'
+    );
+  }
+
   function abilityHtml(card) {
     if (!card.ability || !ABILITY_TEXT[card.ability.type]) return '';
     const text = ABILITY_TEXT[card.ability.type](card.ability.value);
@@ -106,7 +166,7 @@ window.VW = window.VW || {};
 
   function typeLabelHtml(card) {
     const meta = TYPE_META[card.type];
-    return '<span class="card__type" style="color:' + meta.accent + '">[ <span class="card__icon card__icon--' + card.type + '"></span>' + meta.label + ' ]</span>';
+    return '<span class="card__type"><span class="card__icon card__icon--' + card.type + '"></span>' + meta.label + '</span>';
   }
 
   function cardHtml(card, opts) {
@@ -124,10 +184,12 @@ window.VW = window.VW || {};
     const flavor = card.flavor ? '<span class="card__flavor">' + escapeHtml(card.flavor) + '</span>' : '';
     return (
       '<' + tag + ' class="card' + sizeClass + (interactive ? ' card--clickable' : '') + (disabled ? ' card--disabled' : '') + (isTarget ? ' card--targetable' : '') + '"' +
-      ' style="border-left-color:' + meta.accent + '" ' + attrs + '>' +
+      ' style="--card-accent:' + meta.accent + '" ' + attrs + '>' +
       typeLabelHtml(card) +
+      '<span class="card__body">' +
       '<span class="card__name">' + escapeHtml(card.name) + '</span>' +
       desc + flavor + abilityHtml(card) +
+      '</span>' +
       '</' + tag + '>'
     );
   }
@@ -136,13 +198,15 @@ window.VW = window.VW || {};
     const meta = TYPE_META[card.type];
     const flavor = card.flavor ? '<span class="card__flavor">' + escapeHtml(card.flavor) + '</span>' : '';
     return (
-      '<div class="card card--locked" style="border-left-color:' + meta.accent + '">' +
+      '<div class="card card--locked" style="--card-accent:' + meta.accent + '">' +
       typeLabelHtml(card) +
+      '<span class="card__body">' +
       '<span class="card__name">' + escapeHtml(card.name) + '</span>' +
       flavor + abilityHtml(card) +
       '<button type="button" class="btn btn--unlock" data-action="unlock" data-card-id="' + card.id + '"' + (canAfford ? '' : ' disabled') + '>' +
       'Unlock: ' + cost + ' Scrip' +
       '</button>' +
+      '</span>' +
       '</div>'
     );
   }
@@ -209,7 +273,7 @@ window.VW = window.VW || {};
           const got = earned.indexOf(a.id) !== -1;
           return (
             '<div class="achievement' + (got ? ' achievement--earned' : '') + '">' +
-            '<span class="achievement__mark">' + (got ? '&#9733;' : '&#9734;') + '</span>' +
+            '<span class="achievement__mark star-pip ' + (got ? 'star-pip--full' : 'star-pip--empty') + '" aria-hidden="true"></span>' +
             '<div class="achievement__text">' +
             '<strong>' + escapeHtml(a.name) + '</strong>' +
             '<span>' + escapeHtml(a.description) + '</span>' +
@@ -396,7 +460,7 @@ window.VW = window.VW || {};
       '<h1>Verse Wars</h1>' +
       '<div class="board__header-actions">' +
       '<button type="button" class="btn btn--ghost btn--icon" data-action="toggle-sound" aria-label="Toggle sound">' +
-      (sound.isEnabled() ? '&#128266;' : '&#128263;') +
+      '<span class="icon--sound ' + (sound.isEnabled() ? 'icon--sound-on' : 'icon--sound-off') + '" aria-hidden="true"></span>' +
       '</button>' +
       '<div class="codex-dropdown">' +
       '<button type="button" class="btn btn--ghost" data-action="toggle-codex">Codex &#9662;</button>' +
@@ -453,6 +517,9 @@ window.VW = window.VW || {};
         });
       }
     }
+    if (confirmingRestart) {
+      root.insertAdjacentHTML('beforeend', restartConfirmHtml());
+    }
   }
 
   root.addEventListener('click', (e) => {
@@ -465,9 +532,19 @@ window.VW = window.VW || {};
     const actionEl = e.target.closest('[data-action]');
     if (actionEl) {
       const action = actionEl.getAttribute('data-action');
-      if (action === 'start' || action === 'restart') {
+      if (action === 'start') {
         sound.start();
         dispatch({ type: 'START_RUN' });
+      } else if (action === 'restart') {
+        confirmingRestart = true;
+        render();
+      } else if (action === 'confirm-restart') {
+        confirmingRestart = false;
+        sound.start();
+        dispatch({ type: 'START_RUN' });
+      } else if (action === 'cancel-restart') {
+        confirmingRestart = false;
+        render();
       } else if (action === 'toggle-sound') {
         sound.setEnabled(!sound.isEnabled());
         render();

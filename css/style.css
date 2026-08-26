@@ -86,6 +86,14 @@ button {
   color: inherit;
 }
 
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--brass-light);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
 #app {
   position: relative;
   min-height: 100%;
@@ -209,6 +217,18 @@ button {
   padding: 0.5em 0.7em;
   font-size: 1rem;
 }
+
+.icon--sound {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.icon--sound-on { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='0' y='1' width='2' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='2' width='3' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='3' width='4' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='4' width='4' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='5' width='3' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='6' width='2' height='1' fill='%23e7e2d6'/%3E%3Crect x='5' y='3' width='1' height='2' fill='%23e7e2d6'/%3E%3Crect x='7' y='2' width='1' height='4' fill='%23e7e2d6'/%3E%3C/svg%3E"); }
+.icon--sound-off { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='0' y='1' width='2' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='2' width='3' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='3' width='4' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='4' width='4' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='5' width='3' height='1' fill='%23e7e2d6'/%3E%3Crect x='0' y='6' width='2' height='1' fill='%23e7e2d6'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23e7e2d6'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23e7e2d6'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23e7e2d6'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23e7e2d6'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23e7e2d6'/%3E%3C/svg%3E"); }
 
 .btn--unlock {
   margin-top: 0.6em;
@@ -565,9 +585,18 @@ button {
 }
 
 .board__hp {
-  font-size: 1.15rem;
-  letter-spacing: 0.15em;
-  color: var(--danger-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.hp-pip {
+  display: inline-block;
+  width: 1.05rem;
+  height: 1.05rem;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .board__banners {
@@ -719,47 +748,79 @@ button {
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.3em;
   width: 150px;
-  padding: 0.65em 0.7em;
-  border: 1px solid var(--steel-border);
-  border-left: 4px solid var(--brass);
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--card-accent, var(--steel-border));
   border-radius: var(--radius);
   background: linear-gradient(160deg, var(--panel-raised), var(--panel));
   color: var(--text);
   text-align: left;
   font-family: var(--font-body);
-  box-shadow: var(--shadow-panel);
+  box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
 }
 
 .card--sm {
   width: 120px;
-  padding: 0.5em 0.6em;
   font-size: 0.9em;
 }
 
 .card__type {
   display: flex;
   align-items: center;
-  gap: 0.3em;
+  gap: 0.35em;
+  flex: 0 0 auto;
+  padding: 0.35em 0.6em;
+  background: var(--card-accent, var(--steel-border));
+  color: #1c140c;
   font-size: 0.65rem;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .card__icon {
   display: inline-block;
-  width: 0.7em;
-  text-align: center;
+  width: 0.9em;
+  height: 0.9em;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  flex: 0 0 auto;
 }
 
-.card__icon--crew::before { content: '\263A'; }
-.card__icon--vessel::before { content: '\25B2'; }
-.card__icon--location::before { content: '\2302'; }
-.card__icon--artifact::before { content: '\2726'; }
-.card__icon--rule::before { content: '\00A7'; }
-.card__icon--action::before { content: '\26A1'; }
-.card__icon--goal::before { content: '\2605'; }
+/* Small flat-color pixel icons (8x8 grid), inlined as data-URI backgrounds
+   rather than unicode glyphs, so every platform renders the exact same
+   shape instead of falling back to whatever emoji font is installed. Filled
+   with the same dark ink as the header text (not the type's own accent
+   color): the icon always sits on that accent as its background, so
+   matching it would make the icon invisible. */
+.card__icon--crew { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='2' y='0' width='4' height='2' fill='%231c140c'/%3E%3Crect x='1' y='2' width='6' height='4' fill='%231c140c'/%3E%3Crect x='2' y='6' width='2' height='2' fill='%231c140c'/%3E%3Crect x='4' y='6' width='2' height='2' fill='%231c140c'/%3E%3C/svg%3E"); }
+.card__icon--vessel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='0' y='2' width='6' height='4' fill='%231c140c'/%3E%3Crect x='6' y='3' width='2' height='2' fill='%231c140c'/%3E%3C/svg%3E"); }
+.card__icon--location { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='1' y='1' width='1' height='6' fill='%231c140c'/%3E%3Crect x='2' y='1' width='4' height='3' fill='%231c140c'/%3E%3C/svg%3E"); }
+.card__icon--artifact { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='3' y='0' width='2' height='1' fill='%231c140c'/%3E%3Crect x='2' y='1' width='4' height='1' fill='%231c140c'/%3E%3Crect x='1' y='2' width='6' height='2' fill='%231c140c'/%3E%3Crect x='2' y='4' width='4' height='1' fill='%231c140c'/%3E%3Crect x='3' y='5' width='2' height='1' fill='%231c140c'/%3E%3C/svg%3E"); }
+.card__icon--rule { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='1' y='1' width='6' height='1' fill='%231c140c'/%3E%3Crect x='1' y='3.5' width='6' height='1' fill='%231c140c'/%3E%3Crect x='1' y='6' width='6' height='1' fill='%231c140c'/%3E%3C/svg%3E"); }
+.card__icon--action { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='4' y='0' width='2' height='1' fill='%231c140c'/%3E%3Crect x='3' y='1' width='2' height='1' fill='%231c140c'/%3E%3Crect x='2' y='2' width='3' height='1' fill='%231c140c'/%3E%3Crect x='3' y='3' width='2' height='1' fill='%231c140c'/%3E%3Crect x='1' y='4' width='3' height='1' fill='%231c140c'/%3E%3Crect x='2' y='5' width='2' height='1' fill='%231c140c'/%3E%3Crect x='1' y='6' width='2' height='1' fill='%231c140c'/%3E%3C/svg%3E"); }
+.card__icon--goal { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='3' y='0' width='2' height='2' fill='%231c140c'/%3E%3Crect x='0' y='2' width='2' height='1' fill='%231c140c'/%3E%3Crect x='6' y='2' width='2' height='1' fill='%231c140c'/%3E%3Crect x='2' y='3' width='4' height='2' fill='%231c140c'/%3E%3Crect x='0' y='5' width='2' height='1' fill='%231c140c'/%3E%3Crect x='6' y='5' width='2' height='1' fill='%231c140c'/%3E%3Crect x='3' y='6' width='2' height='2' fill='%231c140c'/%3E%3C/svg%3E"); }
+
+.hp-pip--full { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7'%3E%3Crect x='1' y='0' width='2' height='1' fill='%23d1453d'/%3E%3Crect x='4' y='0' width='2' height='1' fill='%23d1453d'/%3E%3Crect x='0' y='1' width='7' height='1' fill='%23d1453d'/%3E%3Crect x='0' y='2' width='7' height='1' fill='%23d1453d'/%3E%3Crect x='0' y='3' width='7' height='1' fill='%23d1453d'/%3E%3Crect x='1' y='4' width='5' height='1' fill='%23d1453d'/%3E%3Crect x='2' y='5' width='3' height='1' fill='%23d1453d'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%23d1453d'/%3E%3C/svg%3E"); }
+.hp-pip--empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7'%3E%3Crect x='1' y='0' width='2' height='1' fill='%23454c57'/%3E%3Crect x='4' y='0' width='2' height='1' fill='%23454c57'/%3E%3Crect x='0' y='1' width='7' height='1' fill='%23454c57'/%3E%3Crect x='0' y='2' width='7' height='1' fill='%23454c57'/%3E%3Crect x='0' y='3' width='7' height='1' fill='%23454c57'/%3E%3Crect x='1' y='4' width='5' height='1' fill='%23454c57'/%3E%3Crect x='2' y='5' width='3' height='1' fill='%23454c57'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%23454c57'/%3E%3C/svg%3E"); }
+
+.star-pip--full { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='3' y='0' width='2' height='2' fill='%23c99a4b'/%3E%3Crect x='0' y='2' width='2' height='1' fill='%23c99a4b'/%3E%3Crect x='6' y='2' width='2' height='1' fill='%23c99a4b'/%3E%3Crect x='2' y='3' width='4' height='2' fill='%23c99a4b'/%3E%3Crect x='0' y='5' width='2' height='1' fill='%23c99a4b'/%3E%3Crect x='6' y='5' width='2' height='1' fill='%23c99a4b'/%3E%3Crect x='3' y='6' width='2' height='2' fill='%23c99a4b'/%3E%3C/svg%3E"); }
+.star-pip--empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect x='3' y='0' width='2' height='2' fill='%23454c57'/%3E%3Crect x='0' y='2' width='2' height='1' fill='%23454c57'/%3E%3Crect x='6' y='2' width='2' height='1' fill='%23454c57'/%3E%3Crect x='2' y='3' width='4' height='2' fill='%23454c57'/%3E%3Crect x='0' y='5' width='2' height='1' fill='%23454c57'/%3E%3Crect x='6' y='5' width='2' height='1' fill='%23454c57'/%3E%3Crect x='3' y='6' width='2' height='2' fill='%23454c57'/%3E%3C/svg%3E"); }
+
+.card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  padding: 0.55em 0.7em 0.7em;
+}
+
+.card--sm .card__body {
+  padding: 0.45em 0.6em 0.6em;
+}
 
 .card__name {
   font-family: var(--font-display);
@@ -1164,9 +1225,20 @@ button.card {
 }
 
 .achievement__mark {
-  color: var(--brass);
-  font-size: 1.2rem;
-  line-height: 1;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.2rem;
+  height: 1.2rem;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.star-pip {
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .achievement__text {
@@ -1183,6 +1255,72 @@ button.card {
 .achievement__text span {
   color: var(--text-dim);
   font-size: 0.78rem;
+}
+
+/* --- Achievement toasts -------------------------------------------------- */
+
+.achievement-toast-layer {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  max-width: min(90vw, 320px);
+}
+
+.achievement-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--brass-dim);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--panel-raised), var(--panel));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 154, 75, 0.15);
+  opacity: 0;
+  transform: translateX(24px);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.achievement-toast--in {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.achievement-toast--out {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.achievement-toast__mark {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  filter: drop-shadow(0 0 5px rgba(232, 184, 75, 0.6));
+}
+
+.achievement-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  min-width: 0;
+}
+
+.achievement-toast__text strong {
+  color: var(--brass);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.achievement-toast__text span {
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.15;
 }
 
 /* --- Responsive ---------------------------------------------------------- */

@@ -247,6 +247,10 @@ window.VW = window.VW || {};
     card({ id: 'rule-reserves', type: CARD_TYPES.RULE, name: 'Deep Reserves', effect: 'DRAW_COUNT', value: 3, description: 'Draw 3 cards per turn.' }),
     card({ id: 'rule-luck', type: CARD_TYPES.RULE, name: "Runner's Luck", effect: 'DRAW_COUNT', value: 2, description: 'Draw 2 cards per turn.' }),
     card({ id: 'rule-overdrive', type: CARD_TYPES.RULE, name: 'Overdrive', effect: 'DRAW_COUNT', value: 4, description: 'Draw 4 cards per turn.' }),
+    card({ id: 'rule-purge', type: CARD_TYPES.RULE, name: 'Purge Protocol', effect: 'HAND_LIMIT', value: 0, description: 'Hand limit is 0 cards.', flavor: 'The Combine likes an empty manifest. Fewer questions that way.' }),
+    card({ id: 'rule-frenzy', type: CARD_TYPES.RULE, name: 'Boarding Frenzy', effect: 'PLAY_LIMIT', value: 5, description: 'Play 5 cards per turn.', flavor: 'Everybody’s manifest empties out fast, one way or another.' }),
+    card({ id: 'rule-flood', type: CARD_TYPES.RULE, name: 'Signal Flood', effect: 'DRAW_COUNT', value: 6, description: 'Draw 6 cards per turn.', flavor: 'Every relay on the line talking at once.' }),
+    card({ id: 'rule-dark', type: CARD_TYPES.RULE, name: 'Running Dark', effect: 'DRAW_COUNT', value: 0, description: 'Draw 0 cards per turn.', flavor: 'No signal out, no signal in. Just you and whatever’s already on board.' }),
   ];
 
   const ACTION_CARDS = [
@@ -259,6 +263,8 @@ window.VW = window.VW || {};
     card({ id: 'action-reroute', type: CARD_TYPES.ACTION, name: 'Reroute', effect: 'DISCARD_GOAL', description: 'Discard the active Goal.' }),
     card({ id: 'action-doubledown', type: CARD_TYPES.ACTION, name: 'Double Down', effect: 'DRAW_TWO', description: 'Draw 2 cards immediately.' }),
     card({ id: 'action-signaljam', type: CARD_TYPES.ACTION, name: 'Signal Jam', effect: 'DISCARD_RIVAL_HAND', description: "Rival discards a random card from hand." }),
+    card({ id: 'action-duplicate', type: CARD_TYPES.ACTION, name: 'Twin Rails', effect: 'DUPLICATE_KEEPER', description: 'Duplicate your strongest Keeper.', flavor: 'One good idea deserves a second car.' }),
+    card({ id: 'action-cleanslate', type: CARD_TYPES.ACTION, name: 'Clean Slate', effect: 'RESET_RULES', description: 'Discard every active Rule.', flavor: 'Sometimes the fastest fix is starting over.' }),
   ];
 
   const GOAL_CARDS = [
@@ -269,6 +275,11 @@ window.VW = window.VW || {};
     card({ id: 'goal-ghostwire', type: CARD_TYPES.GOAL, name: 'Ghost in the Wire', checkId: 'ghost_wire', description: 'Control 1 Artifact + 2 Locations to win.' }),
     card({ id: 'goal-salvage', type: CARD_TYPES.GOAL, name: 'Salvage Run', checkId: 'salvage_run', description: 'Control 2 Vessels + 1 Artifact to win.' }),
     card({ id: 'goal-fullhouse', type: CARD_TYPES.GOAL, name: 'Full House', checkId: 'full_house', description: 'Control 1 Crew + 1 Vessel + 1 Location + 1 Artifact to win.' }),
+    card({ id: 'goal-skeleton', type: CARD_TYPES.GOAL, name: 'Skeleton Crew', checkId: 'skeleton_crew', description: 'Control 3 Crew to win.' }),
+    card({ id: 'goal-vault', type: CARD_TYPES.GOAL, name: 'Vault Keeper', checkId: 'vault_keeper', description: 'Control 2 Artifacts to win.' }),
+    card({ id: 'goal-homestead', type: CARD_TYPES.GOAL, name: 'Homestead', checkId: 'homestead', description: 'Control 1 Location + 2 Crew to win.' }),
+    card({ id: 'goal-convoy', type: CARD_TYPES.GOAL, name: 'Convoy', checkId: 'convoy', description: 'Control 2 Vessels + 1 Location to win.' }),
+    card({ id: 'goal-relicrun', type: CARD_TYPES.GOAL, name: 'Relic Run', checkId: 'relic_run', description: 'Control 2 Artifacts + 1 Vessel to win.' }),
   ];
 
   function countByType(keepers, type) {
@@ -287,6 +298,29 @@ window.VW = window.VW || {};
       countByType(k, CARD_TYPES.VESSEL) >= 1 &&
       countByType(k, CARD_TYPES.LOCATION) >= 1 &&
       countByType(k, CARD_TYPES.ARTIFACT) >= 1,
+    skeleton_crew: (k) => countByType(k, CARD_TYPES.CREW) >= 3,
+    vault_keeper: (k) => countByType(k, CARD_TYPES.ARTIFACT) >= 2,
+    homestead: (k) => countByType(k, CARD_TYPES.LOCATION) >= 1 && countByType(k, CARD_TYPES.CREW) >= 2,
+    convoy: (k) => countByType(k, CARD_TYPES.VESSEL) >= 2 && countByType(k, CARD_TYPES.LOCATION) >= 1,
+    relic_run: (k) => countByType(k, CARD_TYPES.ARTIFACT) >= 2 && countByType(k, CARD_TYPES.VESSEL) >= 1,
+  };
+
+  // The same per-type thresholds GOAL_CHECKS tests, but as data instead of
+  // closures, so the AI can score *progress* toward a Goal (how many of the
+  // required Keepers a side already has) rather than only a pass/fail check.
+  const GOAL_REQUIREMENTS = {
+    full_crew: { [CARD_TYPES.CREW]: 2, [CARD_TYPES.VESSEL]: 1 },
+    frontier_king: { [CARD_TYPES.LOCATION]: 2 },
+    collector: { [CARD_TYPES.ARTIFACT]: 1, [CARD_TYPES.CREW]: 1, [CARD_TYPES.VESSEL]: 1 },
+    long_run: { [CARD_TYPES.VESSEL]: 3 },
+    ghost_wire: { [CARD_TYPES.ARTIFACT]: 1, [CARD_TYPES.LOCATION]: 2 },
+    salvage_run: { [CARD_TYPES.VESSEL]: 2, [CARD_TYPES.ARTIFACT]: 1 },
+    full_house: { [CARD_TYPES.CREW]: 1, [CARD_TYPES.VESSEL]: 1, [CARD_TYPES.LOCATION]: 1, [CARD_TYPES.ARTIFACT]: 1 },
+    skeleton_crew: { [CARD_TYPES.CREW]: 3 },
+    vault_keeper: { [CARD_TYPES.ARTIFACT]: 2 },
+    homestead: { [CARD_TYPES.LOCATION]: 1, [CARD_TYPES.CREW]: 2 },
+    convoy: { [CARD_TYPES.VESSEL]: 2, [CARD_TYPES.LOCATION]: 1 },
+    relic_run: { [CARD_TYPES.ARTIFACT]: 2, [CARD_TYPES.VESSEL]: 1 },
   };
 
   // Shown on the run-complete overlay: a short, random "coming home" beat,
@@ -303,7 +337,7 @@ window.VW = window.VW || {};
   // Shown instead of a random HOMECOMING_LINE when the run is completed
   // with Bub, DJ Cool, and Sakura Junction all in the tableau at once.
   const SECRET_HOMECOMING_LINE =
-    "Every seat's full for this one \u2014 Bub's got the save-point joke loaded again, DJ Cool's aux cord is not up for debate, and Sakura Junction still owes you that gin and tonic. Whatever's past the Last Junction can wait one more night. The whole crew made it home.";
+    "Every seat's full for this one. Bub's got the save-point joke loaded again, DJ Cool's aux cord is not up for debate, and Sakura Junction still owes you that gin and tonic. Whatever's past the Last Junction can wait one more night. The whole crew made it home.";
 
   const ACHIEVEMENTS = [
     { id: 'first-run', name: 'First Run', description: 'Complete a full run, start to finish.' },
@@ -312,6 +346,9 @@ window.VW = window.VW || {};
     { id: 'high-roller', name: 'High Roller', description: 'Win 5 stages on the harder side of a junction, across all runs.' },
     { id: 'fully-loaded', name: 'Fully Loaded', description: 'Unlock every Crew, Vessel, Location, and Artifact in the Hangar.' },
     { id: 'full-house', name: 'Full House', description: 'Win a stage with the Full House goal.' },
+    { id: 'stacked-rules', name: 'Triple Stack', description: 'Win a stage with all three Rule slots active at once.' },
+    { id: 'deep-pockets', name: 'Deep Pockets', description: 'Bank 150 lifetime Scrip.' },
+    { id: 'boarding-spree', name: 'Highwayman', description: 'Steal or swap 3 rival Keepers in a single run.' },
   ];
 
   // --- Roguelite progression ---------------------------------------------
@@ -345,29 +382,39 @@ window.VW = window.VW || {};
   const BASE_SCRIP_PER_STAGE = 5;
   const STARTING_HP = 4;
 
-  // Eight stages, each themed on a stop along the line. Only stage 0 starts
+  // Ten stages, each themed on a stop along the line. Only stage 0 starts
   // the player with a truly empty tableau (every later stage inherits
   // whatever was carried forward from the last win), so it gets a small
   // playerHeadStart to compensate, otherwise it plays far harder than the
   // stages after it, rather than easier.
   //
   // The map branches instead of running in a straight line: Dustfall is
-  // always first and the Last Junction is always last, but the six stops
-  // between them are arranged as three paired choices. Each pair shares a
+  // always first and the Last Junction is always last, and the eight stops
+  // between them are arranged as paired choices. Each pair shares a
   // difficulty tier (headstart/drawBonus), and the "harder" side of each
   // pair asks for one more card in the rival's hand in exchange for bonus
-  // Scrip. Both sides of a pair lead to the same next pair, so the map
-  // stays a fixed 5 stages deep no matter which path is taken, while still
-  // giving 8 distinct routes through a run (2 x 2 x 2).
+  // Scrip.
+  //
+  // The first choice genuinely forks the route rather than just reskinning
+  // it: Glass Concourse leads to the Sakura Junction / Rustbelt Span pair,
+  // while Nine Rivers Yard leads to a different pair entirely, the
+  // Cinderline / Cold Harbor Yard, so which stop you clear first changes
+  // what you'll see next. Both of those second-tier pairs reconverge on the
+  // same Hollowpoint Crossing / Static Fringe pair before the Last
+  // Junction, keeping the map a fixed 5 stages deep no matter which path is
+  // taken, while still giving 8 distinct routes through a run (2 x 2 x 2)
+  // across 10 unique named stops instead of 8.
   const STAGE_MAP = {
     start: 'dustfall',
     totalDepth: 5,
     nodes: {
       dustfall: { id: 'dustfall', name: 'Dustfall Station', rivalHand: 2, rivalDrawBonus: 0, rivalHeadStart: 0, playerHeadStart: 1, harder: false, scripBonus: 0, next: ['glass', 'ninerivers'], isFinal: false },
       glass: { id: 'glass', name: 'The Glass Concourse', rivalHand: 4, rivalDrawBonus: 0, rivalHeadStart: 1, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['sakura', 'rustbelt'], isFinal: false },
-      ninerivers: { id: 'ninerivers', name: 'Nine Rivers Yard', rivalHand: 3, rivalDrawBonus: 0, rivalHeadStart: 1, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['sakura', 'rustbelt'], isFinal: false },
+      ninerivers: { id: 'ninerivers', name: 'Nine Rivers Yard', rivalHand: 3, rivalDrawBonus: 0, rivalHeadStart: 1, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['cinderline', 'coldharbor'], isFinal: false },
       sakura: { id: 'sakura', name: 'Sakura Junction', rivalHand: 5, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['hollowpoint', 'staticfringe'], isFinal: false },
       rustbelt: { id: 'rustbelt', name: 'The Rustbelt Span', rivalHand: 4, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['hollowpoint', 'staticfringe'], isFinal: false },
+      cinderline: { id: 'cinderline', name: 'The Cinderline', rivalHand: 5, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['hollowpoint', 'staticfringe'], isFinal: false },
+      coldharbor: { id: 'coldharbor', name: 'Cold Harbor Yard', rivalHand: 4, rivalDrawBonus: 0, rivalHeadStart: 2, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['hollowpoint', 'staticfringe'], isFinal: false },
       hollowpoint: { id: 'hollowpoint', name: 'Hollowpoint Crossing', rivalHand: 6, rivalDrawBonus: 1, rivalHeadStart: 3, playerHeadStart: 0, harder: true, scripBonus: 2, next: ['lastjunction'], isFinal: false },
       staticfringe: { id: 'staticfringe', name: 'The Static Fringe', rivalHand: 5, rivalDrawBonus: 1, rivalHeadStart: 3, playerHeadStart: 0, harder: false, scripBonus: 0, next: ['lastjunction'], isFinal: false },
       lastjunction: { id: 'lastjunction', name: 'The Last Junction', rivalHand: 6, rivalDrawBonus: 1, rivalHeadStart: 4, playerHeadStart: 0, harder: false, scripBonus: 0, next: [], isFinal: true },
@@ -388,6 +435,7 @@ window.VW = window.VW || {};
   VW.ACTION_CARDS = ACTION_CARDS;
   VW.GOAL_CARDS = GOAL_CARDS;
   VW.GOAL_CHECKS = GOAL_CHECKS;
+  VW.GOAL_REQUIREMENTS = GOAL_REQUIREMENTS;
   VW.HOMECOMING_LINES = HOMECOMING_LINES;
   VW.SECRET_HOMECOMING_LINE = SECRET_HOMECOMING_LINE;
   VW.ACHIEVEMENTS = ACHIEVEMENTS;

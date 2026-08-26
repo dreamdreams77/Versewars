@@ -30,6 +30,7 @@ js/
   train.js                        the canvas pixel-art train + its animation wrapper
   sound.js                          synthesized sound effects (no audio files)
   main.js                             renders the DOM from state and wires up clicks
+test/run.js            dependency-free regression suite; run with `node test/run.js`
 ```
 
 Every file attaches what it needs to a shared `VW` global (`window.VW`); there's
@@ -54,8 +55,17 @@ no `import`/`export` and no bundler.
 
 ## Testing checklist
 
+Run `node test/run.js` first: a small, dependency-free regression suite covering
+card/goal/stage-map data integrity and the engine reducer, including a batch of
+simulated full runs (`PLAY_CARD`/`AI_FULL_TURN`/etc. dispatched directly, no
+browser needed) that catch reducer-level regressions like an infinite loop or a
+stranded turn. It only exercises `js/cards.js`, `js/storage.js`, `js/engine.js`,
+and `js/train.js` — `js/main.js` touches the DOM at load time, so UI changes
+still need a manual pass.
+
 Before submitting a PR:
 
+- [ ] `node test/run.js` passes
 - [ ] No console errors
 - [ ] A full run plays start to finish (win and lose at least one stage)
 - [ ] New cards/abilities behave as described and interact sensibly with

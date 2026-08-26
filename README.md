@@ -44,14 +44,16 @@ safe in-memory fallback if that's ever unavailable).
 ### The run
 
 - A run is five stages deep. Dustfall Station always starts it and the Last Junction always
-  ends it; the three stops between them branch. At most junctions you'll choose between two
-  named stages before continuing, so no two runs take quite the same line:
-  Dustfall Station → (**The Glass Concourse** or **Nine Rivers Yard**) → (**Sakura Junction**
-  or **The Rustbelt Span**) → (**Hollowpoint Crossing** or **The Static Fringe**) →
-  **The Last Junction**.
+  ends it; the eight stops between them branch across 10 named stages. At every junction
+  you'll choose between two named stages before continuing, so no two runs take quite the
+  same line. The very first choice genuinely forks the route rather than just reskinning it:
+  Dustfall Station → **The Glass Concourse** → (**Sakura Junction** or **The Rustbelt Span**),
+  or Dustfall Station → **Nine Rivers Yard** → (**The Cinderline** or **Cold Harbor Yard**).
+  Both of those second branches then reconverge on the same next pair, (**Hollowpoint
+  Crossing** or **The Static Fringe**) → **The Last Junction**.
 - One side of each choice runs a tougher rival (+1 starting hand) in exchange for bonus Scrip
-  on the win. The game marks which is which before you pick. Both sides lead to the same next
-  pair of choices, so the run always stays five stages deep regardless of the path taken.
+  on the win. The game marks which is which before you pick. The run always stays five stages
+  deep regardless of the path taken, across 8 distinct routes.
 - Win a stage and your tableau carries forward into the next one, growing stronger as you go.
 - Lose a stage and you lose 1 HP, then retry that same stage fresh. A run starts with 4 HP:
   run out, and it's over (though every stage you already cleared banked its Scrip for good).
@@ -111,6 +113,7 @@ js/
   train.js                       the canvas pixel-art train + its animation wrapper
   sound.js                         synthesized sound effects (no audio files)
   main.js                            renders the DOM from state and wires up clicks
+test/run.js           dependency-free regression suite: `node test/run.js`
 ```
 
 There's no bundler and no `import`/`export`. Every file attaches what it needs to a shared
@@ -119,11 +122,16 @@ There's no bundler and no `import`/`export`. Every file attaches what it needs t
 
 ## Roadmap ideas
 
-- Smarter AI (currently a straightforward heuristic, not deeply strategic)
 - Card art beyond the train sprite and the Codex comic
-- More Rule/Action/Goal variety beyond the current 45-card pool
-- A wider map: more than one junction pair per depth, or paths that don't reconverge
 - Online multiplayer (would need a small backend or a service like Firebase/PartyKit)
+
+Already done: the AI scores every playable card against the current board (ability
+strength, Goal proximity, best available steal target) instead of picking by a fixed
+type order; the Rule/Action/Goal pool has grown to 56 cards, including two new Action
+effects (duplicate a Keeper, reset every active Rule) and five new Goal combinations;
+and the map's first branch now genuinely forks the route (Glass Concourse and Nine
+Rivers Yard each lead to their own distinct next pair) instead of both sides
+reconverging immediately, spanning 10 named stages across 8 distinct routes.
 
 ## A note
 

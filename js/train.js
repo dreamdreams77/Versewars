@@ -11,15 +11,23 @@ window.VW = window.VW || {};
 (function () {
   const COLORS = {
     hull: '#8891a0',
+    hullLight: '#b7bfcb',
     hullDark: '#565c66',
+    panelLine: '#6f7682',
     outline: '#2f333b',
     window: '#ffe9c2',
+    windowFrame: '#20242c',
+    windowGlint: '#fffaf0',
     cockpit: '#fff4de',
     rail: '#262b31',
     tie: '#121417',
     stripeStart: '#e8b84b',
     stripeEnd: '#d1453d',
     glow: 'rgba(240,200,120,0.35)',
+    wheel: '#14171b',
+    wheelHub: '#454c57',
+    headlight: '#fff6d8',
+    tailLight: '#d1453d',
   };
 
   const BOTTOM = 14; // baseline row every car and the nose sit on
@@ -49,6 +57,10 @@ window.VW = window.VW || {};
     opts = opts || {};
     const gx = (u) => Math.round(u * px);
     const gw = (u) => Math.round(u * px) + 1;
+    const rect = (x, y, w, h, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(gx(x), gx(y), gw(w), gw(h));
+    };
 
     if (opts.glow !== false) {
       const cx = gx(8);
@@ -65,26 +77,57 @@ window.VW = window.VW || {};
       });
     }
 
+    // A small pair of wheel bogies under a car/nose span, drawn into the
+    // undercarriage shadow band rather than below BOTTOM (that row is the
+    // rail itself), so they read as wheels peeking out from under the skirt.
+    function wheels(x, w) {
+      const positions = w > 5 ? [x + w * 0.22, x + w * 0.78] : [x + w * 0.5];
+      positions.forEach((wx) => {
+        rect(wx - 0.7, BOTTOM - 1.6, 1.4, 1.5, COLORS.wheel);
+        rect(wx - 0.25, BOTTOM - 1.2, 0.5, 0.5, COLORS.wheelHub);
+      });
+    }
+
     CARS.forEach((c) => {
       const h = BOTTOM - c.top;
-      ctx.fillStyle = COLORS.hull;
-      ctx.fillRect(gx(c.x), gx(c.top), gw(c.w), gw(h));
-      ctx.fillStyle = COLORS.hullDark;
-      ctx.fillRect(gx(c.x), gx(BOTTOM - 2), gw(c.w), gw(2));
+      rect(c.x, c.top, c.w, h, COLORS.hull);
+      rect(c.x, c.top, c.w, 1.3, COLORS.hullLight);
+      rect(c.x, c.top + h * 0.56, c.w, 0.4, COLORS.panelLine);
+      rect(c.x, BOTTOM - 2, c.w, 2, COLORS.hullDark);
+      wheels(c.x, c.w);
       ctx.lineWidth = Math.max(2, Math.round(px * 0.3));
       ctx.strokeStyle = COLORS.outline;
       ctx.strokeRect(gx(c.x), gx(c.top), gw(c.w), gw(h));
     });
 
+    // Coupler bars bridging the gaps between adjacent car bodies.
+    for (let i = 0; i < CARS.length - 1; i++) {
+      const a = CARS[i];
+      const b = CARS[i + 1];
+      const gapX = a.x + a.w;
+      const gapW = b.x - gapX;
+      if (gapW > 0) rect(gapX, BOTTOM - 1.6, gapW, 1.2, COLORS.outline);
+    }
+
+    // A small marker lamp on the rear-most car.
+    rect(CARS[0].x + 0.5, CARS[0].top + 1.6, 1, 1, COLORS.tailLight);
+
     NOSE_TOPS.forEach((top, i) => {
       const x = NOSE_X + i;
       const h = BOTTOM - top;
-      ctx.fillStyle = COLORS.hull;
-      ctx.fillRect(gx(x), gx(top), gw(1), gw(h));
+      rect(x, top, 1, h, COLORS.hull);
+      rect(x, top, 1, Math.min(0.9, h), COLORS.hullLight);
       const dh = Math.min(2, h);
-      ctx.fillStyle = COLORS.hullDark;
-      ctx.fillRect(gx(x), gx(BOTTOM - dh), gw(1), gw(dh));
+      rect(x, BOTTOM - dh, 1, dh, COLORS.hullDark);
     });
+    wheels(NOSE_X, NOSE_TOPS.length);
+
+    // Headlight at the very tip of the nose, with a soft halo.
+    const tipX = NOSE_X + NOSE_TOPS.length - 1;
+    const tipTop = NOSE_TOPS[NOSE_TOPS.length - 1];
+    ctx.fillStyle = 'rgba(255,246,216,0.3)';
+    ctx.fillRect(gx(tipX - 0.6), gx(tipTop - 0.6), gw(2.2), gw(2.2));
+    rect(tipX, tipTop, 1, 1, COLORS.headlight);
 
     if (opts.stripe !== false) {
       const stripeX = gx(CARS[0].x);
@@ -97,14 +140,16 @@ window.VW = window.VW || {};
     }
 
     if (opts.windows !== false) {
-      ctx.fillStyle = COLORS.window;
       WINDOW_GROUPS.forEach((g) => {
         g.xs.forEach((x) => {
-          ctx.fillRect(gx(x), gx(g.y), gw(g.w), gw(g.h));
+          rect(x - 0.35, g.y - 0.35, g.w + 0.7, g.h + 0.7, COLORS.windowFrame);
+          rect(x, g.y, g.w, g.h, COLORS.window);
+          rect(x, g.y, g.w * 0.4, g.h * 0.4, COLORS.windowGlint);
         });
       });
-      ctx.fillStyle = COLORS.cockpit;
-      ctx.fillRect(gx(NOSE_X + 2), gx(7), gw(2), gw(2));
+      rect(NOSE_X + 1.6, 6.6, 2.4, 2.4, COLORS.windowFrame);
+      rect(NOSE_X + 2, 7, 2, 2, COLORS.cockpit);
+      rect(NOSE_X + 2, 7, 0.8, 0.8, COLORS.windowGlint);
     }
   }
 
