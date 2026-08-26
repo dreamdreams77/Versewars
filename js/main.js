@@ -37,11 +37,51 @@ window.VW = window.VW || {};
     return div.innerHTML;
   }
 
+  // Achievement toasts live in their own layer appended straight to
+  // <body>, outside #app, so they survive the next full re-render instead
+  // of getting wiped the moment render() rebuilds the root's innerHTML.
+  let toastLayer = null;
+  function getToastLayer() {
+    if (!toastLayer) {
+      toastLayer = document.createElement('div');
+      toastLayer.className = 'achievement-toast-layer';
+      document.body.appendChild(toastLayer);
+    }
+    return toastLayer;
+  }
+
+  function showAchievementToast(def) {
+    const layer = getToastLayer();
+    const el = document.createElement('div');
+    el.className = 'achievement-toast';
+    el.innerHTML =
+      '<span class="achievement-toast__mark">&#9733;</span>' +
+      '<div class="achievement-toast__text"><strong>Achievement unlocked</strong><span>' + escapeHtml(def.name) + '</span></div>';
+    layer.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('achievement-toast--in'));
+    setTimeout(() => {
+      el.classList.remove('achievement-toast--in');
+      el.classList.add('achievement-toast--out');
+      setTimeout(() => el.remove(), 400);
+    }, 4200);
+  }
+
   function dispatch(action) {
     const prevOutcome = state.stageOutcome;
     const prevScrip = state.meta ? state.meta.totalScrip : 0;
+    const prevAchIds = (state.meta && state.meta.achievements) || [];
     state = engine.reduce(state, action);
     render();
+
+    const nextAchIds = (state.meta && state.meta.achievements) || [];
+    if (nextAchIds.length > prevAchIds.length) {
+      const newIds = nextAchIds.filter((id) => prevAchIds.indexOf(id) === -1);
+      newIds.forEach((id) => {
+        const def = ACHIEVEMENTS.find((a) => a.id === id);
+        if (def) showAchievementToast(def);
+      });
+      sound.achievement();
+    }
 
     if (state.log && state.log[0] && state.log[0].indexOf('static storm rattles') !== -1) {
       const boardEl = document.querySelector('.board');

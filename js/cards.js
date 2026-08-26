@@ -346,6 +346,9 @@ window.VW = window.VW || {};
     { id: 'high-roller', name: 'High Roller', description: 'Win 5 stages on the harder side of a junction, across all runs.' },
     { id: 'fully-loaded', name: 'Fully Loaded', description: 'Unlock every Crew, Vessel, Location, and Artifact in the Hangar.' },
     { id: 'full-house', name: 'Full House', description: 'Win a stage with the Full House goal.' },
+    { id: 'stacked-rules', name: 'Triple Stack', description: 'Win a stage with all three Rule slots active at once.' },
+    { id: 'deep-pockets', name: 'Deep Pockets', description: 'Bank 150 lifetime Scrip.' },
+    { id: 'boarding-spree', name: 'Highwayman', description: 'Steal or swap 3 rival Keepers in a single run.' },
   ];
 
   // --- Roguelite progression ---------------------------------------------

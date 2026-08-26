@@ -1185,6 +1185,73 @@ button.card {
   font-size: 0.78rem;
 }
 
+/* --- Achievement toasts -------------------------------------------------- */
+
+.achievement-toast-layer {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  max-width: min(90vw, 320px);
+}
+
+.achievement-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--brass-dim);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--panel-raised), var(--panel));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 154, 75, 0.15);
+  opacity: 0;
+  transform: translateX(24px);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.achievement-toast--in {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.achievement-toast--out {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.achievement-toast__mark {
+  flex: 0 0 auto;
+  color: var(--brass);
+  font-size: 1.4rem;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(232, 184, 75, 0.5);
+}
+
+.achievement-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  min-width: 0;
+}
+
+.achievement-toast__text strong {
+  color: var(--brass);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.achievement-toast__text span {
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
 /* --- Responsive ---------------------------------------------------------- */
 
 @media (max-width: 640px) {

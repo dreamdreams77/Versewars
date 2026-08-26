@@ -88,6 +88,12 @@ window.VW = window.VW || {};
       tone(660, 0.09, { type: 'square', delay: 0, gain: 0.07 });
       tone(880, 0.14, { type: 'square', delay: 0.07, gain: 0.07 });
     },
+    achievement() {
+      tone(587.33, 0.1, { type: 'triangle', delay: 0, gain: 0.1 });
+      tone(739.99, 0.1, { type: 'triangle', delay: 0.08, gain: 0.1 });
+      tone(880, 0.1, { type: 'triangle', delay: 0.16, gain: 0.1 });
+      tone(1174.66, 0.3, { type: 'triangle', delay: 0.24, gain: 0.12 });
+    },
   };
 
   window.VW.sound = sound;

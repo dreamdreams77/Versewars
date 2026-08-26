@@ -317,6 +317,7 @@ window.VW = window.VW || {};
           const stolen = other.keepers.splice(idx, 1)[0];
           me.keepers.push(stolen);
           state.log.unshift(label(playerKey) + ' snatched ' + stolen.name + ' from ' + label(otherKey) + '!');
+          if (playerKey === 'you') recordSteal(state);
         }
         break;
       }
@@ -359,6 +360,7 @@ window.VW = window.VW || {};
           me.keepers[mi] = other.keepers[oi];
           other.keepers[oi] = tmp;
           state.log.unshift(label(playerKey) + ' and ' + label(otherKey) + ' swap cargo.');
+          if (playerKey === 'you') recordSteal(state);
         }
         break;
       }
@@ -430,6 +432,13 @@ window.VW = window.VW || {};
     }
   }
 
+  // Tracks the player's own Boarding Party / Swap Rails successes for the
+  // run (never the rival's), toward the 'boarding-spree' achievement.
+  function recordSteal(state) {
+    state.run.stealsThisRun = (state.run.stealsThisRun || 0) + 1;
+    if (state.run.stealsThisRun >= 3) grantAchievement(state, 'boarding-spree');
+  }
+
   function checkStageOutcome(state) {
     if (!state.activeGoal) return;
     const checker = GOAL_CHECKS[state.activeGoal.checkId];
@@ -448,8 +457,11 @@ window.VW = window.VW || {};
           state.run.scripEarnedThisRun = (state.run.scripEarnedThisRun || 0) + reward;
           state.meta = Object.assign({}, state.meta, { totalScrip: state.meta.totalScrip + reward, unlockedIds: state.meta.unlockedIds.slice() });
           window.VW.storage.saveMeta(state.meta);
+          if (state.meta.totalScrip >= 150) grantAchievement(state, 'deep-pockets');
 
           if (state.activeGoal.checkId === 'full_house') grantAchievement(state, 'full-house');
+          const activeRuleCount = ['HAND_LIMIT', 'PLAY_LIMIT', 'DRAW_COUNT'].filter((slot) => state.activeRules[slot]).length;
+          if (activeRuleCount === 3) grantAchievement(state, 'stacked-rules');
           if (node.harder) {
             state.meta = Object.assign({}, state.meta, { riskyWinsLifetime: (state.meta.riskyWinsLifetime || 0) + 1 });
             window.VW.storage.saveMeta(state.meta);
@@ -555,7 +567,9 @@ window.VW = window.VW || {};
         const stolen = other.keepers.splice(targetIdx, 1)[0];
         me.keepers.push(stolen);
         state.log.unshift('You snatched ' + stolen.name + ' from the rival crew!');
+        recordSteal(state);
       } else if (pending.effect === 'TRADE_KEEPER' && me.keepers.length > 0) {
+        recordSteal(state);
         const mi = Math.floor(Math.random() * me.keepers.length);
         const tmp = me.keepers[mi];
         me.keepers[mi] = other.keepers[targetIdx];
@@ -652,7 +666,7 @@ window.VW = window.VW || {};
 
   function startRun() {
     const meta = window.VW.storage.loadMeta();
-    const run = { nodeId: STAGE_MAP.start, depth: 1, hp: window.VW.STARTING_HP, tableau: [], hpShieldUsed: false, everLostStage: false, scripEarnedThisRun: 0 };
+    const run = { nodeId: STAGE_MAP.start, depth: 1, hp: window.VW.STARTING_HP, tableau: [], hpShieldUsed: false, everLostStage: false, scripEarnedThisRun: 0, stealsThisRun: 0 };
     return dealStage(meta, run);
   }
 
@@ -667,6 +681,7 @@ window.VW = window.VW || {};
       hpShieldUsed: state.run.hpShieldUsed,
       everLostStage: state.run.everLostStage,
       scripEarnedThisRun: state.run.scripEarnedThisRun,
+      stealsThisRun: state.run.stealsThisRun,
     };
     return dealStage(state.meta, nextRun);
   }
